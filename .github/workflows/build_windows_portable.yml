@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - name: 启用 Git 长路径支持
+        run: git config --global core.longpaths true
+
       - name: 拉取项目代码
         uses: actions/checkout@v4
         with:
@@ -19,14 +22,14 @@ jobs:
       - name: 配置 Flutter 环境
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version-file: pubspec.yaml
+          channel: 'stable'
+          cache: true
 
       - name: 应用项目 Patch 补丁
         shell: pwsh
         run: lib/scripts/patch.ps1 windows
 
-      - name: 生成构建配置文件
+      - name: 生成构建配置文件 pili_release.json
         shell: pwsh
         run: lib/scripts/build.ps1
 
