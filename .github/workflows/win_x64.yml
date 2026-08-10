@@ -28,7 +28,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
+          flutter-version-file: pubspec.yaml
           cache: true
 
       - name: Apply Patch
