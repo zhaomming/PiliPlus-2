@@ -25,6 +25,7 @@ import 'package:PiliPlus/models/common/video/video_decode_type.dart';
 import 'package:PiliPlus/models/common/video/video_quality.dart';
 import 'package:PiliPlus/models/common/video/video_type.dart';
 import 'package:PiliPlus/models/video/play/url.dart';
+import 'package:PiliPlus/pages/common/common_intro_controller.dart';
 import 'package:PiliPlus/models_new/download/bili_download_entry_info.dart';
 import 'package:PiliPlus/models_new/media_list/media_list.dart';
 import 'package:PiliPlus/models_new/pgc/pgc_info_model/result.dart';
@@ -333,16 +334,35 @@ class VideoDetailController extends GetxController
     try {
       final bvid = this.bvid;
       if (bvid.isEmpty) return;
-      final introCtr = Get.find<CommonIntroController>(tag: heroTag);
-      final videoData = introCtr.videoDetail.value;
-      final title = videoData.title ?? firstVideo?.title ?? '';
-      final pic = videoData.pic ?? '';
-      final ownerName = videoData.owner?.name ?? '';
-      final ownerMid = videoData.owner?.mid;
-      final duration = videoData.duration ?? 0;
+      String title = '';
+      String pic = '';
+      String ownerName = '';
+      int? ownerMid;
+      int duration = 0;
+      if (Get.isRegistered<CommonIntroController>(tag: heroTag)) {
+        final introCtr = Get.find<CommonIntroController>(tag: heroTag);
+        final videoData = introCtr.videoDetail.value;
+        title = videoData.title ?? '';
+        pic = videoData.pic ?? '';
+        ownerName = videoData.owner?.name ?? '';
+        ownerMid = videoData.owner?.mid;
+        duration = videoData.duration ?? 0;
+      }
       final progress = (playedTime?.inSeconds) ?? 0;
       final itemMap = {
         'bvid': bvid,
+        'cid': cid,
+        'title': title,
+        'pic': pic,
+        'owner_name': ownerName,
+        'owner_mid': ownerMid,
+        'duration': duration,
+        'progress': progress,
+        'view_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      };
+      GStorage.localHistory.put(bvid, itemMap);
+    } catch (_) {}
+  }
         'aid': videoData.aid ?? IdUtils.bv2av(bvid),
         'cid': cid.value,
         'title': title,

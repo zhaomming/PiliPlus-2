@@ -148,8 +148,8 @@ abstract final class RequestUtils {
       if (!isFollow) {
         final itemMap = {
           'mid': mid,
-          'uname': name ?? '',
-          'face': face ?? '',
+          'uname': followStatus?.uname ?? '',
+          'face': followStatus?.face ?? '',
           'sign': '',
           'add_time': DateFormatUtils.format(
             DateTime.now().millisecondsSinceEpoch ~/ 1000,

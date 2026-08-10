@@ -82,7 +82,7 @@ class FollowChildController
               ? m['mid'] as int
               : int.tryParse(m['mid']?.toString() ?? '');
           list.add(FollowItemModel(
-            mid: midVal,
+            mid: midVal ?? 0,
             uname: m['uname']?.toString(),
             face: m['face']?.toString(),
             sign: m['sign']?.toString(),

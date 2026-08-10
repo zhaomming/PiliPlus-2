@@ -114,15 +114,13 @@ class LaterController extends MultiSelectController<LaterData, LaterItemModel>
               ? m['aid'] as int
               : int.tryParse(m['aid']?.toString() ?? '');
           list.add(LaterItemModel(
+            aid: aid,
+            bvid: bvid,
             title: m['title']?.toString(),
-            cover: m['pic']?.toString(),
-            history: History(
-              bvid: bvid,
-              oid: aid,
-              cid: m['cid'] is int ? m['cid'] as int : null,
-            ),
-            authorName: m['owner_name']?.toString(),
-            authorMid: m['owner_mid'] is int ? m['owner_mid'] as int : null,
+            pic: m['pic']?.toString(),
+            owner: m['owner_name'] != null
+                ? Owner(name: m['owner_name']?.toString())
+                : null,
             duration: m['duration'] is int ? m['duration'] as int : null,
           ));
         }

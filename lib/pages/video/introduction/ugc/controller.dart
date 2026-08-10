@@ -152,7 +152,12 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     hasLater.value = GStorage.localWatchLater.containsKey(bvid);
     final ownerMid = videoDetail.value.owner?.mid;
     if (ownerMid != null) {
-      isFollow.value = GStorage.localFollows.containsKey(ownerMid.toString());
+      final isLocalFollow = GStorage.localFollows.containsKey(ownerMid.toString());
+      if (isLocalFollow) {
+        followStatus
+          ..value.attribute = 2
+          ..refresh();
+      }
     }
   }
 

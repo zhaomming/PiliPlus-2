@@ -2,6 +2,7 @@ import 'package:PiliPlus/common/widgets/dialog/dialog.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/http/user.dart';
 import 'package:PiliPlus/models_new/history/data.dart';
+import 'package:PiliPlus/models_new/history/history.dart';
 import 'package:PiliPlus/models_new/history/list.dart';
 import 'package:PiliPlus/models_new/history/tab.dart';
 import 'package:PiliPlus/pages/common/multi_select/multi_select_controller.dart';
