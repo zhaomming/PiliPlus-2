@@ -363,20 +363,6 @@ class VideoDetailController extends GetxController
       GStorage.localHistory.put(bvid, itemMap);
     } catch (_) {}
   }
-        'aid': videoData.aid ?? IdUtils.bv2av(bvid),
-        'cid': cid.value,
-        'title': title,
-        'pic': pic,
-        'owner_name': ownerName,
-        'owner_mid': ownerMid,
-        'view_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        'progress': progress,
-        'duration': duration,
-        'url': 'https://www.bilibili.com/video/$bvid',
-      };
-      GStorage.localHistory.put(bvid, itemMap);
-    } catch (_) {}
-  }
 
   void initFileSource(BiliDownloadEntryInfo entry, {bool isInit = true}) {
     this.entry = entry;
