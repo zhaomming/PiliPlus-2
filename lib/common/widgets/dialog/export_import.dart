@@ -119,7 +119,7 @@ Future<void> importFromLocalFile<T>({
   required FutureOr<void> Function(T json) onImport,
 }) async {
   final result = await FilePicker.pickFile(
-    type: .custom,
+    type: FileType.custom,
     allowedExtensions: const ['json', 'txt'],
   );
   if (result != null) {
@@ -216,7 +216,7 @@ Future<void> showImportExportDialog<T>(
   builder: (context) {
     const style = TextStyle(fontSize: 15);
     return SimpleDialog(
-      clipBehavior: .hardEdge,
+      clipBehavior: Clip.hardEdge,
       title: Text('导入/导出$title'),
       children: [
         DialogOption(
