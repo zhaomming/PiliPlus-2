@@ -3,6 +3,9 @@ param(
 )
 
 try {
+    if ($env:GITHUB_WORKSPACE) {
+        Set-Location $env:GITHUB_WORKSPACE
+    }
     $versionName = $null
 
     $versionCode = [int](git rev-list --count HEAD).Trim()

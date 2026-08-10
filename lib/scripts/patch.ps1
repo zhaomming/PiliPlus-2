@@ -174,3 +174,7 @@ foreach ($patch in $patches) {
         Write-Host "$patch applied"
     }
 }
+
+if ($env:GITHUB_WORKSPACE) {
+    Set-Location $env:GITHUB_WORKSPACE
+}

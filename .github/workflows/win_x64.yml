@@ -17,6 +17,9 @@ jobs:
     name: Release Windows x64
     runs-on: windows-latest
     steps:
+      - name: Enable Long Paths
+        run: git config --global core.longpaths true
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -34,8 +37,10 @@ jobs:
         run: lib/scripts/patch.ps1 windows
 
       - name: Add fastforge and Inno Setup
+        shell: pwsh
         run: |
           dart pub global activate fastforge
+          echo "$env:LOCALAPPDATA\Pub\Cache\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           choco install innosetup
 
       - name: Add Chinese language file for Inno Setup
