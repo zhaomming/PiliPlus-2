@@ -239,16 +239,6 @@ abstract final class UserHttp {
       return const Error(null);
     }
   }
-      options: Options(contentType: Headers.formUrlEncodedContentType),
-    );
-    if (res.data['code'] == 0) {
-      SmartDialog.showToast('yeah！成功移除');
-      return const Success(null);
-    } else {
-      SmartDialog.showToast(res.data['message'].toString());
-      return const Error(null);
-    }
-  }
 
   // 获取用户凭证 失效
   // static Future thirdLogin() async {
