@@ -26,7 +26,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version-file: pubspec.yaml
+          flutter-version: '3.27.4'
+          cache: true
 
       - name: Apply Patch
         shell: pwsh
