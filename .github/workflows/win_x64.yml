@@ -3,13 +3,6 @@ name: Build for Windows x64
 on:
   push:
     branches: [ main, master ]
-  workflow_call:
-    inputs:
-      tag:
-        description: "tag"
-        required: false
-        default: ""
-        type: string
   workflow_dispatch:
 
 jobs:
@@ -17,7 +10,7 @@ jobs:
     name: Release Windows x64
     runs-on: windows-latest
     steps:
-      - name: Enable Long Paths
+      - name: 启用 Git 长路径支持
         run: git config --global core.longpaths true
 
       - name: Checkout code
@@ -25,67 +18,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
-          flutter-version: '3.27.4'
+          channel: 'stable'
           cache: true
 
       - name: Apply Patch
         shell: pwsh
-        run: lib/scripts/patch.ps1 windows
-
-      - name: Add fastforge and Inno Setup
-        shell: pwsh
         run: |
-          dart pub global activate fastforge
-          echo "$env:LOCALAPPDATA\Pub\Cache\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          choco install innosetup
-
-      - name: Add Chinese language file for Inno Setup
-        run: |
-          Copy-Item "windows/packaging/exe/ChineseSimplified.isl" "C:\Program Files (x86)\Inno Setup 6\Languages\ChineseSimplified.isl"
-        shell: pwsh
+          lib/scripts/patch.ps1 windows
+          Set-Location $env:GITHUB_WORKSPACE
 
       - name: Set and Extract version
         shell: pwsh
-        run: lib/scripts/build.ps1
-
-      - name: Build Windows
         run: |
-          fastforge package --platform windows --targets exe --flutter-build-args="dart-define-from-file=pili_release.json"
+          lib/scripts/build.ps1
+          Set-Location $env:GITHUB_WORKSPACE
 
-      - name: Prepare Upload
-        run: |
-          mkdir -p Release/PiliPlus-Win
-          mkdir -p PiliPlus-Win-Setup
-          mv build/windows/x64/runner/Release/* Release/PiliPlus-Win/
-          mv dist/**/*.exe PiliPlus-Win-Setup/PiliPlus_windows_${{env.version}}_x64_setup.exe
+      - name: Get dependencies
+        run: flutter pub get
 
-      - name: Compress
-        run: |
-          Compress-Archive -Path "Release/PiliPlus-Win" -DestinationPath "PiliPlus_windows_${{env.version}}_x64_portable.zip"
+      - name: Build Windows Executable
+        run: flutter build windows --release --dart-define-from-file=pili_release.json
+
+      - name: Compress Portable Zip
         shell: pwsh
-
-      - name: Release
-        if: ${{ github.event.inputs.tag != '' }}
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: ${{ github.event.inputs.tag }}
-          files: |
-            PiliPlus_windows_*.zip
-            PiliPlus-Win-Setup/PiliPlus_windows_*.exe
+        run: |
+          7z a -r PiliPlus_windows_portable.zip ./build/windows/x64/runner/Release/*
 
       - name: Upload windows file release
         uses: actions/upload-artifact@v4
         with:
           name: Windows-file-x64-release
-          path: PiliPlus_windows_*.zip
-
-      - name: Upload windows setup release
-        uses: actions/upload-artifact@v4
-        with:
-          name: Windows-setup-x64-release
-          path: PiliPlus-Win-Setup/PiliPlus_windows_*.exe
+          path: PiliPlus_windows_portable.zip
