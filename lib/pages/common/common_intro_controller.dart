@@ -152,7 +152,12 @@ abstract class CommonIntroController extends GetxController
   Future<void> viewLater() async {
     final res = await (hasLater.value
         ? UserHttp.toViewDel(aids: IdUtils.bv2av(bvid).toString())
-        : UserHttp.toViewLater(bvid: bvid));
+        : UserHttp.toViewLater(
+            bvid: bvid,
+            title: videoDetail.value.title,
+            pic: videoDetail.value.pic,
+            ownerName: videoDetail.value.owner?.name,
+          ));
     if (res.isSuccess) hasLater.toggle();
   }
 }
@@ -203,7 +208,7 @@ mixin FavMixin on TripleMixin {
   // 收藏
   void showFavBottomSheet(BuildContext context, {bool isLongPress = false}) {
     if (!Accounts.main.isLogin) {
-      SmartDialog.showToast('账号未登录');
+      actionFavVideoLocal();
       return;
     }
     // 快速收藏 &
@@ -217,6 +222,49 @@ mixin FavMixin on TripleMixin {
       }
     } else if (!isLongPress) {
       PageUtils.showFavBottomSheet(context: context, ctr: this);
+    }
+  }
+
+  Future<void> actionFavVideoLocal() async {
+    final (rid, type) = getFavRidType;
+    final key = '$rid:$type';
+    final exists = GStorage.localFavorites.containsKey(key) ||
+        GStorage.localFavorites.containsKey(rid.toString());
+    if (exists) {
+      await GStorage.localFavorites.delete(key);
+      await GStorage.localFavorites.delete(rid.toString());
+      hasFav.value = false;
+      updateFavCount(-1);
+      SmartDialog.showToast('取消本地收藏成功');
+    } else {
+      String title = '';
+      String pic = '';
+      String ownerName = '';
+      if (this is CommonIntroController) {
+        final ctr = this as CommonIntroController;
+        title = ctr.videoDetail.value.title ?? '';
+        pic = ctr.videoDetail.value.pic ?? '';
+        ownerName = ctr.videoDetail.value.owner?.name ?? '';
+      }
+      final itemMap = {
+        'id': key,
+        'bvid': rid.toString(),
+        'type': type,
+        'title': title,
+        'pic': pic,
+        'owner_name': ownerName,
+        'add_time': DateFormatUtils.format(
+          DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          format: DateFormatUtils.longFormatDs,
+        ),
+        'url': rid.toString().startsWith('BV')
+            ? 'https://www.bilibili.com/video/$rid'
+            : '',
+      };
+      await GStorage.localFavorites.put(key, itemMap);
+      hasFav.value = true;
+      updateFavCount(1);
+      SmartDialog.showToast('添加至本地收藏成功');
     }
   }
 

@@ -29,6 +29,8 @@ import 'package:PiliPlus/pages/video/reply/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
 import 'package:PiliPlus/services/service_locator.dart';
 import 'package:PiliPlus/utils/accounts.dart';
+import 'package:PiliPlus/utils/date_utils.dart';
+import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/device_utils.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/extension/string_ext.dart';
@@ -138,6 +140,19 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
     if (isLogin) {
       queryAllStatus();
       queryFollowStatus();
+    } else {
+      queryLocalStatus();
+    }
+  }
+
+  void queryLocalStatus() {
+    hasLike.value = GStorage.localLikes.containsKey(bvid);
+    hasFav.value = GStorage.localFavorites.containsKey('$bvid:2') ||
+        GStorage.localFavorites.containsKey(bvid);
+    hasLater.value = GStorage.localWatchLater.containsKey(bvid);
+    final ownerMid = videoDetail.value.owner?.mid;
+    if (ownerMid != null) {
+      isFollow.value = GStorage.localFollows.containsKey(ownerMid.toString());
     }
   }
 
@@ -224,7 +239,34 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
   @override
   Future<void> actionLikeVideo() async {
     if (!isLogin) {
-      SmartDialog.showToast('账号未登录');
+      final bvid = this.bvid;
+      final videoData = videoDetail.value;
+      final exists = GStorage.localLikes.containsKey(bvid);
+      if (exists) {
+        await GStorage.localLikes.delete(bvid);
+        hasLike.value = false;
+        videoData.stat?.like = max(0, (videoData.stat?.like ?? 1) - 1);
+        SmartDialog.showToast('取消赞');
+      } else {
+        final itemMap = {
+          'id': bvid,
+          'bvid': bvid,
+          'type': 'video',
+          'title': videoData.title ?? '',
+          'pic': videoData.pic ?? '',
+          'owner_name': videoData.owner?.name ?? '',
+          'add_time': DateFormatUtils.format(
+            DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            format: DateFormatUtils.longFormatDs,
+          ),
+          'url': 'https://www.bilibili.com/video/$bvid',
+        };
+        await GStorage.localLikes.put(bvid, itemMap);
+        hasLike.value = true;
+        hasDislike.value = false;
+        videoData.stat?.like = (videoData.stat?.like ?? 0) + 1;
+        SmartDialog.showToast('点赞成功');
+      }
       return;
     }
     if (videoDetail.value.stat == null) {

@@ -1,0 +1,37 @@
+name: 构建 Windows 免安装便携版
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: 编译 Windows 便携版
+    runs-on: windows-latest
+
+    steps:
+      - name: 拉取项目代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Flutter 环境
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: 安装项目依赖
+        run: flutter pub get
+
+      - name: 编译 Windows Release 版本
+        run: flutter build windows --release
+
+      - name: 打包成 Portable 压缩包
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "PiliPlus_Windows_Portable.zip"
+
+      - name: 上传构建产物 (Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PiliPlus-Windows-Portable
+          path: PiliPlus_Windows_Portable.zip

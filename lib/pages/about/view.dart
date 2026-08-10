@@ -24,6 +24,7 @@ import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/update.dart';
+import 'package:PiliPlus/utils/user_data_exporter.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter/material.dart' hide ListTile;
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -253,6 +254,21 @@ Commit Hash: ${BuildConfig.commitHash}''',
                   await LoginUtils.onLoginMain();
                 }
               },
+            ),
+          ),
+          ListTile(
+            title: const Text('导入/导出用户数据'),
+            subtitle: Text('包含历史记录、稍后观看、关注、点赞与收藏', style: subTitleStyle),
+            leading: const Icon(Icons.dataset_outlined),
+            onTap: () => showUserDataImportExportDialog(
+              context,
+              onExportJson: UserDataExporter.exportJson,
+              onExportHtml: UserDataExporter.exportHtml,
+              onImport: (json) async {
+                await UserDataExporter.importJson(json);
+                SmartDialog.showToast('用户数据导入成功');
+              },
+              localFileName: () => 'user_data_${DeviceUtils.platformName}',
             ),
           ),
           ListTile(

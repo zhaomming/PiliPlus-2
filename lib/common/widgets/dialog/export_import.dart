@@ -27,14 +27,15 @@ void exportToClipBoard({
 void exportToLocalFile({
   required ValueGetter<String> onExport,
   required ValueGetter<String> localFileName,
+  List<String> allowedExtensions = const ['json'],
 }) {
   final res = utf8.encode(onExport());
   StorageUtils.saveBytes2File(
     name:
         'piliplus_${localFileName()}_'
-        '${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}.json',
+        '${DateFormat('yyyyMMddHHmmss').format(DateTime.now())}.${allowedExtensions.first}',
     bytes: res,
-    allowedExtensions: const ['json'],
+    allowedExtensions: allowedExtensions,
   );
 }
 
@@ -260,6 +261,77 @@ Future<void> showImportExportDialog<T>(
           onPressed: () {
             Get.back();
             importFromLocalFile<T>(onImport: onImport);
+          },
+        ),
+      ],
+    );
+  },
+);
+
+Future<void> showUserDataImportExportDialog(
+  BuildContext context, {
+  required ValueGetter<String> onExportJson,
+  required ValueGetter<String> onExportHtml,
+  required FutureOr<void> Function(Map<String, dynamic> json) onImport,
+  required ValueGetter<String> localFileName,
+}) => showDialog(
+  context: context,
+  builder: (context) {
+    const style = TextStyle(fontSize: 15);
+    return SimpleDialog(
+      clipBehavior: Clip.hardEdge,
+      title: const Text('导入/导出用户数据'),
+      children: [
+        DialogOption(
+          child: const Text('导出至剪贴板 (JSON)', style: style),
+          onPressed: () {
+            Get.back();
+            exportToClipBoard(onExport: onExportJson);
+          },
+        ),
+        DialogOption(
+          child: const Text('导出 JSON 文件至本地 (用于备份/恢复)', style: style),
+          onPressed: () {
+            Get.back();
+            exportToLocalFile(
+              onExport: onExportJson,
+              localFileName: localFileName,
+              allowedExtensions: const ['json'],
+            );
+          },
+        ),
+        DialogOption(
+          child: const Text('导出 HTML 网页至本地 (包含封面与链接/可视化预览)', style: style),
+          onPressed: () {
+            Get.back();
+            exportToLocalFile(
+              onExport: onExportHtml,
+              localFileName: () => '${localFileName()}_view',
+              allowedExtensions: const ['html'],
+            );
+          },
+        ),
+        Divider(
+          height: 1,
+          color: ColorScheme.of(context).outline.withValues(alpha: 0.1),
+        ),
+        DialogOption(
+          child: const Text('从剪贴板导入 (JSON)', style: style),
+          onPressed: () {
+            Get.back();
+            importFromClipBoard<Map<String, dynamic>>(
+              context,
+              title: '用户数据',
+              onExport: onExportJson,
+              onImport: onImport,
+            );
+          },
+        ),
+        DialogOption(
+          child: const Text('从本地文件导入 (JSON)', style: style),
+          onPressed: () {
+            Get.back();
+            importFromLocalFile<Map<String, dynamic>>(onImport: onImport);
           },
         ),
       ],

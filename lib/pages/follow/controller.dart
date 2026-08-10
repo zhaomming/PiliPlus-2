@@ -40,6 +40,12 @@ class FollowController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> queryFollowUpTags() async {
+    if (!Accounts.main.isLogin) {
+      tabs.assign(MemberTagItemModel(name: '全部关注'));
+      onInitTab();
+      followState.value = Success(tabs.hashCode);
+      return;
+    }
     final res = await MemberHttp.followUpTags();
     if (res case Success(:final response)) {
       tabs

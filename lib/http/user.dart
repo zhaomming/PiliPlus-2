@@ -17,7 +17,9 @@ import 'package:PiliPlus/models_new/video/video_tag/data.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
 import 'package:PiliPlus/utils/app_sign.dart';
+import 'package:PiliPlus/utils/date_utils.dart';
 import 'package:PiliPlus/utils/global_data.dart';
+import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/wbi_sign.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -169,8 +171,29 @@ abstract final class UserHttp {
   static Future<LoadingState<void>> toViewLater({
     String? bvid,
     Object? aid,
+    String? title,
+    String? pic,
+    String? ownerName,
   }) async {
     assert(aid != null || bvid != null);
+    if (!Accounts.main.isLogin) {
+      final key = bvid ?? aid.toString();
+      final itemMap = {
+        'bvid': bvid ?? '',
+        'aid': aid,
+        'title': title ?? '',
+        'pic': pic ?? '',
+        'owner_name': ownerName ?? '',
+        'add_time': DateFormatUtils.format(
+          DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          format: DateFormatUtils.longFormatDs,
+        ),
+        'url': bvid != null ? 'https://www.bilibili.com/video/$bvid' : '',
+      };
+      await GStorage.localWatchLater.put(key, itemMap);
+      SmartDialog.showToast('yeah！已添加至本地稍后再看');
+      return const Success(null);
+    }
     final res = await Request().post(
       Api.toViewLater,
       data: {
@@ -191,6 +214,14 @@ abstract final class UserHttp {
 
   // 移除已观看
   static Future<LoadingState<void>> toViewDel({required String aids}) async {
+    if (!Accounts.main.isLogin) {
+      final idList = aids.split(',');
+      for (final id in idList) {
+        await GStorage.localWatchLater.delete(id);
+      }
+      SmartDialog.showToast('yeah！成功从本地移除');
+      return const Success(null);
+    }
     final Map<String, dynamic> params = {
       'csrf': Accounts.main.csrf,
       'resources': aids,
@@ -198,6 +229,16 @@ abstract final class UserHttp {
     final res = await Request().post(
       Api.toViewDel,
       data: params,
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+    if (res.data['code'] == 0) {
+      SmartDialog.showToast('yeah！成功移除');
+      return const Success(null);
+    } else {
+      SmartDialog.showToast(res.data['message'].toString());
+      return const Error(null);
+    }
+  }
       options: Options(contentType: Headers.formUrlEncodedContentType),
     );
     if (res.data['code'] == 0) {

@@ -10,9 +10,11 @@ import 'package:PiliPlus/pages/common/common_list_controller.dart'
 import 'package:PiliPlus/pages/common/multi_select/base.dart';
 import 'package:PiliPlus/pages/common/multi_select/multi_select_controller.dart';
 import 'package:PiliPlus/pages/later/base_controller.dart';
+import 'package:PiliPlus/models_new/history/history.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
@@ -101,11 +103,39 @@ class LaterController extends MultiSelectController<LaterData, LaterItemModel>
   RxInt get rxCount => baseCtr.checkedCount;
 
   @override
-  Future<LoadingState<LaterData>> customGetData() => UserHttp.seeYouLater(
-    page: page,
-    viewed: laterViewType.type,
-    asc: asc.value,
-  );
+  Future<LoadingState<LaterData>> customGetData() {
+    if (!Accounts.main.isLogin) {
+      final list = <LaterItemModel>[];
+      for (final val in GStorage.localWatchLater.values) {
+        if (val is Map) {
+          final m = Map<String, dynamic>.from(val);
+          final bvid = m['bvid']?.toString() ?? '';
+          final aid = m['aid'] is int
+              ? m['aid'] as int
+              : int.tryParse(m['aid']?.toString() ?? '');
+          list.add(LaterItemModel(
+            title: m['title']?.toString(),
+            cover: m['pic']?.toString(),
+            history: History(
+              bvid: bvid,
+              oid: aid,
+              cid: m['cid'] is int ? m['cid'] as int : null,
+            ),
+            authorName: m['owner_name']?.toString(),
+            authorMid: m['owner_mid'] is int ? m['owner_mid'] as int : null,
+            duration: m['duration'] is int ? m['duration'] as int : null,
+          ));
+        }
+      }
+      final data = LaterData(count: list.length, list: list);
+      return Future.value(Success(data));
+    }
+    return UserHttp.seeYouLater(
+      page: page,
+      viewed: laterViewType.type,
+      asc: asc.value,
+    );
+  }
 
   @override
   void onInit() {

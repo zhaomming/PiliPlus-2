@@ -105,6 +105,17 @@ class HistoryController
   }
 
   Future<void> _onDelete(Set<HistoryItemModel> removeList) async {
+    if (!account.isLogin) {
+      for (final item in removeList) {
+        final bvid = item.history.bvid;
+        if (bvid != null) {
+          await GStorage.localHistory.delete(bvid);
+        }
+      }
+      afterDelete(removeList);
+      SmartDialog.showToast('已从本地删除');
+      return;
+    }
     SmartDialog.showLoading(msg: '请求中');
     final res = await UserHttp.delHistory(
       removeList
@@ -133,12 +144,50 @@ class HistoryController
   }
 
   @override
-  Future<LoadingState<HistoryData>> customGetData() => UserHttp.historyList(
-    type: type ?? 'all',
-    max: max,
-    viewAt: viewAt,
-    account: account,
-  );
+  Future<LoadingState<HistoryData>> customGetData() {
+    if (!account.isLogin) {
+      final list = <HistoryItemModel>[];
+      for (final val in GStorage.localHistory.values) {
+        if (val is Map) {
+          final m = Map<String, dynamic>.from(val);
+          final bvid = m['bvid']?.toString() ?? '';
+          final aid = m['aid'] is int
+              ? m['aid'] as int
+              : int.tryParse(m['aid']?.toString() ?? '');
+          final cid = m['cid'] is int
+              ? m['cid'] as int
+              : int.tryParse(m['cid']?.toString() ?? '');
+          final viewAt = m['view_at'] is int
+              ? m['view_at'] as int
+              : (m['view_at'] is String ? int.tryParse(m['view_at']) : null);
+          list.add(HistoryItemModel(
+            title: m['title']?.toString(),
+            cover: m['pic']?.toString(),
+            history: History(
+              bvid: bvid,
+              oid: aid,
+              cid: cid,
+              business: 'archive',
+            ),
+            authorName: m['owner_name']?.toString(),
+            authorMid: m['owner_mid'] is int ? m['owner_mid'] as int : null,
+            viewAt: viewAt,
+            progress: m['progress'] is int ? m['progress'] as int : null,
+            duration: m['duration'] is int ? m['duration'] as int : null,
+          ));
+        }
+      }
+      list.sort((a, b) => (b.viewAt ?? 0).compareTo(a.viewAt ?? 0));
+      final data = HistoryData(list: list);
+      return Future.value(Success(data));
+    }
+    return UserHttp.historyList(
+      type: type ?? 'all',
+      max: max,
+      viewAt: viewAt,
+      account: account,
+    );
+  }
 
   @override
   void onClose() {

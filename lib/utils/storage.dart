@@ -24,6 +24,13 @@ abstract final class GStorage {
   static late final Box<int> watchProgress;
   static late final Box<Uint8List>? reply;
 
+  // 无账号本地持久化 Boxes
+  static late final Box<dynamic> localWatchLater;
+  static late final Box<dynamic> localFollows;
+  static late final Box<dynamic> localLikes;
+  static late final Box<dynamic> localFavorites;
+  static late final Box<dynamic> localHistory;
+
   static Future<void> init() async {
     Hive.init(path.join(appSupportDirPath, 'hive'));
     regAdapter();
@@ -62,6 +69,12 @@ abstract final class GStorage {
           return deletedEntries > 4;
         },
       ).then((res) => watchProgress = res),
+      // 本地业务数据 Boxes
+      Hive.openBox('localWatchLater').then((res) => localWatchLater = res),
+      Hive.openBox('localFollows').then((res) => localFollows = res),
+      Hive.openBox('localLikes').then((res) => localLikes = res),
+      Hive.openBox('localFavorites').then((res) => localFavorites = res),
+      Hive.openBox('localHistory').then((res) => localHistory = res),
     ]);
 
     if (Pref.saveReply) {
@@ -117,6 +130,11 @@ abstract final class GStorage {
       video.compact(),
       Accounts.account.compact(),
       watchProgress.compact(),
+      localWatchLater.compact(),
+      localFollows.compact(),
+      localLikes.compact(),
+      localFavorites.compact(),
+      localHistory.compact(),
       ?reply?.compact(),
     ]);
   }
@@ -130,6 +148,11 @@ abstract final class GStorage {
       video.close(),
       Accounts.account.close(),
       watchProgress.close(),
+      localWatchLater.close(),
+      localFollows.close(),
+      localLikes.close(),
+      localFavorites.close(),
+      localHistory.close(),
       ?reply?.close(),
     ]);
   }
@@ -143,6 +166,11 @@ abstract final class GStorage {
       video.clear(),
       Accounts.clear(),
       watchProgress.clear(),
+      localWatchLater.clear(),
+      localFollows.clear(),
+      localLikes.clear(),
+      localFavorites.clear(),
+      localHistory.clear(),
       ?reply?.clear(),
     ]);
   }

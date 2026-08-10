@@ -7,6 +7,7 @@ import 'package:PiliPlus/models_new/follow/data.dart';
 import 'package:PiliPlus/models_new/follow/list.dart';
 import 'package:PiliPlus/pages/common/common_list_controller.dart';
 import 'package:PiliPlus/pages/follow/controller.dart';
+import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
@@ -72,6 +73,25 @@ class FollowChildController
 
   @override
   Future<LoadingState<FollowData>> customGetData() {
+    if (!Accounts.main.isLogin) {
+      final list = <FollowItemModel>[];
+      for (final val in GStorage.localFollows.values) {
+        if (val is Map) {
+          final m = Map<String, dynamic>.from(val);
+          final midVal = m['mid'] is int
+              ? m['mid'] as int
+              : int.tryParse(m['mid']?.toString() ?? '');
+          list.add(FollowItemModel(
+            mid: midVal,
+            uname: m['uname']?.toString(),
+            face: m['face']?.toString(),
+            sign: m['sign']?.toString(),
+          ));
+        }
+      }
+      final data = FollowData(total: list.length, list: list);
+      return Future.value(Success(data));
+    }
     if (tagid != null) {
       return MemberHttp.followUpGroup(mid: mid, tagid: tagid, pn: page);
     }

@@ -60,6 +60,7 @@ import 'package:PiliPlus/utils/extension/num_ext.dart';
 import 'package:PiliPlus/utils/extension/size_ext.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
 import 'package:PiliPlus/utils/platform_utils.dart';
+import 'package:PiliPlus/utils/id_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
 import 'package:PiliPlus/utils/theme_utils.dart';
@@ -325,6 +326,36 @@ class VideoDetailController extends GetxController
     } else if (playedTime case final playedTime?) {
       watchProgress.put(cid.value.toString(), playedTime.inMilliseconds);
     }
+    saveLocalHistory();
+  }
+
+  void saveLocalHistory() {
+    try {
+      final bvid = this.bvid;
+      if (bvid.isEmpty) return;
+      final introCtr = Get.find<CommonIntroController>(tag: heroTag);
+      final videoData = introCtr.videoDetail.value;
+      final title = videoData.title ?? firstVideo?.title ?? '';
+      final pic = videoData.pic ?? '';
+      final ownerName = videoData.owner?.name ?? '';
+      final ownerMid = videoData.owner?.mid;
+      final duration = videoData.duration ?? 0;
+      final progress = (playedTime?.inSeconds) ?? 0;
+      final itemMap = {
+        'bvid': bvid,
+        'aid': videoData.aid ?? IdUtils.bv2av(bvid),
+        'cid': cid.value,
+        'title': title,
+        'pic': pic,
+        'owner_name': ownerName,
+        'owner_mid': ownerMid,
+        'view_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'progress': progress,
+        'duration': duration,
+        'url': 'https://www.bilibili.com/video/$bvid',
+      };
+      GStorage.localHistory.put(bvid, itemMap);
+    } catch (_) {}
   }
 
   void initFileSource(BiliDownloadEntryInfo entry, {bool isInit = true}) {
