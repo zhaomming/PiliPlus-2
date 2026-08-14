@@ -12,6 +12,8 @@ on:
         type: string
   workflow_dispatch:
 
+permissions: write-all
+
 jobs:
   build-windows-app:
     name: Release Windows x64
@@ -58,5 +60,17 @@ jobs:
       - name: Upload windows file release
         uses: actions/upload-artifact@v4
         with:
-          name: Windows-file-x64-release
+          name: Windows-portable-x64
           path: PiliPlus_windows_portable.zip
+
+      - name: Release Portable Zip
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        with:
+          tag_name: v2.1.0-portable
+          name: PiliPlus-2 v2.1.0 便携版
+          draft: false
+          prerelease: false
+          files: PiliPlus_windows_portable.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
