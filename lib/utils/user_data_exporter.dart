@@ -64,25 +64,30 @@ abstract final class UserDataExporter {
 
         final item = Map<String, dynamic>.from(val);
         final title = _escapeHtml((item['title'] ?? item['uname'] ?? item['name'] ?? '未命名项').toString());
-        final cover = item['pic'] ?? item['cover'] ?? item['face'] ?? item['avatar'] ?? '';
+        var cover = (item['pic'] ?? item['cover'] ?? item['face'] ?? item['avatar'] ?? '').toString();
+        if (cover.startsWith('//')) {
+          cover = 'https:$cover';
+        } else if (cover.startsWith('http://')) {
+          cover = 'https://${cover.substring(7)}';
+        }
         final author = _escapeHtml((item['owner_name'] ?? item['author'] ?? item['uname'] ?? '').toString());
         final time = _escapeHtml((item['add_time'] ?? item['view_time'] ?? (item['view_at'] != null ? DateFormatUtils.format(item['view_at'], format: DateFormatUtils.longFormatDs) : '')).toString());
-        final bvid = item['bvid'] ?? item['id'] ?? '';
-        final mid = item['mid'] ?? '';
+        final bvid = (item['bvid'] ?? item['id'] ?? '').toString();
+        final mid = (item['mid'] ?? '').toString();
 
-        String url = item['url'] ?? '';
+        String url = (item['url'] ?? '').toString();
         if (url.isEmpty) {
-          if (bvid.toString().startsWith('BV')) {
+          if (bvid.startsWith('BV')) {
             url = 'https://www.bilibili.com/video/$bvid';
-          } else if (mid != null && mid.toString().isNotEmpty) {
+          } else if (mid.isNotEmpty) {
             url = 'https://space.bilibili.com/$mid';
           }
         }
 
         buffer.write('''
-        <div class="card">
+        <div class="card" data-title="${title.toLowerCase()}" data-author="${author.toLowerCase()}">
           <div class="cover-wrapper">
-            ${cover.toString().isNotEmpty ? '<img class="cover" src="${_escapeHtml(cover.toString())}" loading="lazy" referrerpolicy="no-referrer" alt="封面" />' : '<div class="no-cover">无封面</div>'}
+            ${cover.isNotEmpty ? '<img class="cover" src="${_escapeHtml(cover)}" loading="lazy" referrerpolicy="no-referrer" alt="封面" />' : '<div class="no-cover">无封面</div>'}
           </div>
           <div class="content">
             <h3 class="title" title="$title">$title</h3>
@@ -102,6 +107,7 @@ abstract final class UserDataExporter {
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PiliPlus 本地用户数据导出一览</title>
   <style>
@@ -111,11 +117,12 @@ abstract final class UserDataExporter {
       --text-main: #f8fafc;
       --text-sub: #94a3b8;
       --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
       --border: #334155;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-main);
       padding: 24px 16px;
@@ -123,19 +130,37 @@ abstract final class UserDataExporter {
     }
     .header {
       max-width: 1200px;
-      margin: 0 auto 24px;
+      margin: 0 auto 20px;
       padding-bottom: 16px;
       border-bottom: 1px solid var(--border);
     }
     .header h1 { font-size: 24px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
-    .header p { color: var(--text-sub); font-size: 14px; margin-top: 4px; }
+    .header p { color: var(--text-sub); font-size: 14px; margin-top: 6px; }
+    .search-bar {
+      max-width: 1200px;
+      margin: 0 auto 16px;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--accent);
+    }
     .nav-tabs {
       max-width: 1200px;
-      margin: 0 auto 24px;
+      margin: 0 auto 20px;
       display: flex;
       gap: 8px;
       overflow-x: auto;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
     .tab-btn {
       background: var(--card-bg);
@@ -179,7 +204,7 @@ abstract final class UserDataExporter {
       position: relative;
       width: 100%;
       padding-top: 56.25%;
-      background: #000;
+      background: #020617;
       overflow: hidden;
     }
     .cover {
@@ -220,7 +245,11 @@ abstract final class UserDataExporter {
 <body>
   <div class="header">
     <h1>📱 PiliPlus 本地用户数据列表</h1>
-    <p>导出时间：$exportTime | 本报告脱离应用后可独立在网页浏览器中无缝预览与查阅。</p>
+    <p>导出时间：$exportTime | 本报告脱离客户端后可在任何主流浏览器中独立打开查看并支持即时检索。</p>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" class="search-input" placeholder="🔍 快速搜索当前分类下的标题或 UP 主名称..." oninput="filterCards()" />
   </div>
 
   <div class="nav-tabs">
@@ -245,6 +274,23 @@ abstract final class UserDataExporter {
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       btn.classList.add('active');
+      filterCards();
+    }
+
+    function filterCards() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const activeTab = document.querySelector('.tab-content.active');
+      if (!activeTab) return;
+      const cards = activeTab.querySelectorAll('.card');
+      cards.forEach(card => {
+        const title = card.getAttribute('data-title') || '';
+        const author = card.getAttribute('data-author') || '';
+        if (!query || title.includes(query) || author.includes(query)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
     }
   </script>
 </body>

@@ -3,6 +3,7 @@ import 'package:PiliPlus/http/fav.dart';
 import 'package:PiliPlus/http/loading_state.dart';
 import 'package:PiliPlus/models/common/fav_order_type.dart';
 import 'package:PiliPlus/models/common/video/source_type.dart';
+import 'package:PiliPlus/models/model_owner.dart';
 import 'package:PiliPlus/models_new/fav/fav_detail/data.dart';
 import 'package:PiliPlus/models_new/fav/fav_detail/media.dart';
 import 'package:PiliPlus/models_new/fav/fav_folder/list.dart';
@@ -32,6 +33,23 @@ mixin BaseFavController
   void onViewFav(FavDetailItemModel item, int? index);
 
   Future<void> onCancelFav(int index, int id, int type) async {
+    if (mediaId == -1 || !Accounts.main.isLogin) {
+      final item = loadingState.value.data?[index];
+      if (item?.bvid != null && item!.bvid!.isNotEmpty) {
+        await GStorage.localFavorites.delete(item.bvid!);
+        await GStorage.localFavorites.delete('${item.bvid}:${item.type ?? 2}');
+      }
+      if (id != 0) {
+        await GStorage.localFavorites.delete(id.toString());
+        await GStorage.localFavorites.delete('$id:$type');
+      }
+      loadingState
+        ..value.data!.removeAt(index)
+        ..refresh();
+      updateCount?.call(1);
+      SmartDialog.showToast('取消收藏');
+      return;
+    }
     final res = await FavHttp.favVideo(
       resources: '$id:$type',
       delIds: mediaId.toString(),
@@ -55,6 +73,22 @@ mixin BaseFavController
       content: const Text('确认删除所选收藏吗？'),
       onConfirm: () async {
         final removeList = allChecked.toSet();
+        if (mediaId == -1 || !Accounts.main.isLogin) {
+          for (final item in removeList) {
+            if (item.bvid != null && item.bvid!.isNotEmpty) {
+              await GStorage.localFavorites.delete(item.bvid!);
+              await GStorage.localFavorites.delete('${item.bvid}:${item.type ?? 2}');
+            }
+            if (item.id != null) {
+              await GStorage.localFavorites.delete(item.id.toString());
+              await GStorage.localFavorites.delete('${item.id}:${item.type ?? 2}');
+            }
+          }
+          updateCount?.call(removeList.length);
+          afterDelete(removeList);
+          SmartDialog.showToast('取消收藏');
+          return;
+        }
         final res = await FavHttp.favVideo(
           resources: removeList
               .map((item) => '${item.id}:${item.type}')
@@ -130,7 +164,7 @@ class FavDetailController
     if (isRefresh) {
       FavDetailData data = response.response;
       folderInfo.value = data.info!;
-      _isOwner.value = data.info?.mid == account.mid;
+      _isOwner.value = mediaId == -1 || !account.isLogin || data.info?.mid == account.mid;
     }
     return false;
   }
@@ -142,20 +176,54 @@ class FavDetailController
         ..refresh();
 
   @override
-  Future<LoadingState<FavDetailData>> customGetData() =>
-      FavHttp.userFavFolderDetail(
-        pn: page,
-        ps: 20,
-        mediaId: mediaId,
-        order: order.value,
+  Future<LoadingState<FavDetailData>> customGetData() {
+    if (mediaId == -1 || !account.isLogin) {
+      final medias = <FavDetailItemModel>[];
+      for (final val in GStorage.localFavorites.values) {
+        if (val is Map) {
+          final m = Map<String, dynamic>.from(val);
+          final bvid = m['bvid']?.toString() ?? '';
+          final type = m['type'] is int ? m['type'] as int : 2;
+          final title = m['title']?.toString() ?? '';
+          final pic = (m['pic'] ?? m['cover'] ?? '').toString();
+          final ownerName = (m['owner_name'] ?? m['author'] ?? '').toString();
+          final rawId = m['id'];
+          final idVal = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
+          medias.add(FavDetailItemModel(
+            id: idVal,
+            type: type,
+            title: title,
+            cover: pic,
+            bvid: bvid,
+            upper: ownerName.isNotEmpty ? Owner(name: ownerName) : null,
+          ));
+        }
+      }
+      final info = FavFolderInfo(
+        id: -1,
+        fid: -1,
+        title: '本地收藏',
+        cover: medias.firstOrNull?.cover ?? '',
+        mediaCount: medias.length,
+        mid: 0,
       );
+      isEnd = true;
+      return Future.value(Success(FavDetailData(info: info, medias: medias, hasMore: false)));
+    }
+    return FavHttp.userFavFolderDetail(
+      pn: page,
+      ps: 20,
+      mediaId: mediaId,
+      order: order.value,
+    );
+  }
 
   void toViewPlayAll() {
     if (loadingState.value case Success(:final response)) {
       if (response == null || response.isEmpty) return;
 
       for (FavDetailItemModel element in response) {
-        if (element.ugc?.firstCid == null) {
+        if (element.ugc?.firstCid == null && (element.bvid == null || element.bvid!.isEmpty)) {
           continue;
         } else {
           onViewFav(element, null);
@@ -215,10 +283,10 @@ class FavDetailController
   @override
   void onViewFav(FavDetailItemModel item, int? index) {
     final folder = folderInfo.value;
-    // TODO: dimension
+    final cid = item.ugc?.firstCid ?? 0;
     PageUtils.toVideoPage(
       bvid: item.bvid,
-      cid: item.ugc!.firstCid!,
+      cid: cid,
       cover: item.cover,
       title: item.title,
       extraArguments: isPlayAll.value
@@ -236,3 +304,4 @@ class FavDetailController
     );
   }
 }
+
