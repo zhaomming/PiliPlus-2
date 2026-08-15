@@ -138,6 +138,7 @@ abstract final class RequestUtils {
     required dynamic mid,
     required bool isFollow,
     required ValueChanged<int>? afterMod,
+    RelationData? followStatus,
     String? uname,
     String? face,
   }) async {

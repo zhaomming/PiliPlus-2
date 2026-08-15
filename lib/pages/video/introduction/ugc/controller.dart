@@ -486,6 +486,7 @@ class UgcIntroController extends CommonIntroController with ReloadMixin {
         context: context,
         mid: mid,
         isFollow: attr != 0,
+        followStatus: followStatus.value,
         uname: videoDetail.owner?.name,
         face: videoDetail.owner?.face,
         afterMod: (attribute) {
