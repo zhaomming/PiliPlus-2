@@ -351,7 +351,7 @@ class VideoDetailController extends GetxController
       final progress = (playedTime?.inSeconds) ?? 0;
       final itemMap = {
         'bvid': bvid,
-        'cid': cid,
+        'cid': cid.value,
         'title': title,
         'pic': pic,
         'owner_name': ownerName,

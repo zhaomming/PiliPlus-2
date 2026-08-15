@@ -138,7 +138,8 @@ abstract final class RequestUtils {
     required dynamic mid,
     required bool isFollow,
     required ValueChanged<int>? afterMod,
-    RelationData? followStatus,
+    String? uname,
+    String? face,
   }) async {
     if (mid == null) {
       return;
@@ -148,8 +149,8 @@ abstract final class RequestUtils {
       if (!isFollow) {
         final itemMap = {
           'mid': mid,
-          'uname': followStatus?.uname ?? '',
-          'face': followStatus?.face ?? '',
+          'uname': uname ?? '',
+          'face': face ?? '',
           'sign': '',
           'add_time': DateFormatUtils.format(
             DateTime.now().millisecondsSinceEpoch ~/ 1000,

@@ -16,7 +16,15 @@ class FavController extends CommonListController<FavFolderData, FavFolderInfo> {
   }
 
   @override
-  Future<void> queryData([bool isRefresh = true]) {
+  List<FavFolderInfo>? getDataList(FavFolderData response) {
+    if (response.hasMore == false) {
+      isEnd = true;
+    }
+    return response.list;
+  }
+
+  @override
+  Future<LoadingState<FavFolderData>> customGetData() {
     if (!account.isLogin) {
       String firstCover = '';
       if (GStorage.localFavorites.isNotEmpty) {
@@ -35,25 +43,14 @@ class FavController extends CommonListController<FavFolderData, FavFolderInfo> {
           mediaCount: GStorage.localFavorites.length,
         ),
       ];
-      loadingState.value = Success(list);
-      return Future.syncValue(null);
-    }
-    return super.queryData(isRefresh);
-  }
-
-  @override
-  List<FavFolderInfo>? getDataList(FavFolderData response) {
-    if (response.hasMore == false) {
       isEnd = true;
+      return Future.value(Success(FavFolderData(count: 1, list: list, hasMore: false)));
     }
-    return response.list;
+    return FavHttp.userfavFolder(
+      pn: page,
+      ps: 20,
+      mid: account.mid,
+    );
   }
-
-  @override
-  Future<LoadingState<FavFolderData>> customGetData() => FavHttp.userfavFolder(
-    pn: page,
-    ps: 20,
-    mid: account.mid,
-  );
 }
 
