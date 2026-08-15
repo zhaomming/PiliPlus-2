@@ -54,16 +54,21 @@ jobs:
         run: |
           flutter build windows --release --dart-define-from-file=pili_release.json -v 2>&1 | Tee-Object -FilePath build.log
 
-      - name: Print Build Errors
+      - name: Post Error Log to GitHub Issue
         if: failure()
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          Write-Host "=== TAIL 100 LINES OF BUILD LOG ==="
-          if (Test-Path build.log) {
-            Get-Content -Path build.log -Tail 100
-          } else {
-            Write-Host "build.log not found"
-          }
+          $log = if (Test-Path build.log) { Get-Content -Path build.log -Tail 100 | Out-String } else { "No log file found" }
+          $body = @{
+            title = "CI Windows Build Error Log ($($env:GITHUB_SHA.Substring(0, 9)))"
+            body = "## Build Failure Log`n`n```````n$log`n``````"
+          } | ConvertTo-Json
+          Invoke-RestMethod -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/issues" -Method Post -Headers @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = "application/vnd.github+json"
+          } -Body $body -ContentType "application/json"
 
       - name: Upload Build Log on Failure
         if: failure()
